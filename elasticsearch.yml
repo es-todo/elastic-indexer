@@ -89,21 +89,21 @@ path.logs: /var/log/elasticsearch
 # --------------------------------------------------------------------------------
 
 # Enable security features
-xpack.security.enabled: true
+xpack.security.enabled: false
 
 xpack.security.enrollment.enabled: true
-
-# Enable encryption for HTTP API client connections, such as Kibana, Logstash, and Agents
+# 
+# # Enable encryption for HTTP API client connections, such as Kibana, Logstash, and Agents
 xpack.security.http.ssl:
-  enabled: true
-  keystore.path: certs/http.p12
-
-# Enable encryption and mutual authentication between cluster nodes
+  enabled: false
+#   keystore.path: certs/http.p12
+# 
+# # Enable encryption and mutual authentication between cluster nodes
 xpack.security.transport.ssl:
-  enabled: true
-  verification_mode: certificate
-  keystore.path: certs/transport.p12
-  truststore.path: certs/transport.p12
+  enabled: false
+#   verification_mode: certificate
+#   keystore.path: certs/transport.p12
+#   truststore.path: certs/transport.p12
 
 # Allow HTTP API connections from anywhere
 # Connections are encrypted and require user authentication

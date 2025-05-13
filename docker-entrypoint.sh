@@ -18,5 +18,7 @@ ELASTIC_PID=$!
 
 echo "ElasticSearch starting."
 
+./node_modules/.bin/nodemon --ext ts --watch src --exec 'node ./src/main.ts' &
+
 sleep infinity &
 wait $!
