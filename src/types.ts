@@ -1,17 +1,19 @@
 export type url_outcome = {
   dependencies: dependency[];
   docs: doc[];
-  urls: string[];
+  links: string[];
+  priority: number;
 };
 
 export type doc = {
   permission: permission;
-  titles: string[];
-  body: string[];
+  title: string;
+  body: string;
 };
 
 export type permission =
   | { type: "public" }
+  | { type: "internal" }
   | { type: "user"; user_id: string }
   | { type: "role"; role: string };
 

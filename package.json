@@ -23,6 +23,7 @@
     "nodemon": "^3.1.9",
     "pg": "^8.13.3",
     "schemata": "github:es-todo/schemata",
-    "typescript": "^5.7.3"
+    "typescript": "^5.7.3",
+    "url-pattern": "^1.0.3"
   }
 }

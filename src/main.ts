@@ -1,5 +1,12 @@
 import { Client } from "@elastic/elasticsearch";
+import UrlPattern from "url-pattern";
 import { sleep } from "./sleep.ts";
+import { routes } from "./routes.ts";
+
+const all_routes = routes.map((x) => ({
+  ...x,
+  pattern: new UrlPattern(x.pattern),
+}));
 
 async function start() {
   const client = new Client({ node: "http://127.0.0.1:9200" });
