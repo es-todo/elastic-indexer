@@ -2,7 +2,7 @@ import { Client } from "@elastic/elasticsearch";
 import UrlPattern from "url-pattern";
 import { routes } from "./routes.ts";
 import { es_green, create_index } from "./es-helpers.ts";
-import { close_db, open_db } from "./sqlite.ts";
+import { Database } from "./sqlite.ts";
 
 const all_routes = routes.map((x) => ({
   ...x,
@@ -11,7 +11,7 @@ const all_routes = routes.map((x) => ({
 
 async function start() {
   const client = new Client({ node: "http://127.0.0.1:9200" });
-  const db = await open_db("/mnt/queue.db");
+  const db = await Database.open("/mnt/queue.db");
   await es_green(client);
   await create_index(client, {
     index: "docs",
@@ -41,7 +41,7 @@ async function start() {
   });
   console.log("🎉 Elasticsearch is ready!");
 
-  await close_db(db);
+  await db.close();
   await client.close();
 }
 

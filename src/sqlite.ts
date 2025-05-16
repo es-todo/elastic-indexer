@@ -1,28 +1,33 @@
 import sqlite3 from "sqlite3";
 
-const { Database } = sqlite3;
-type Database = sqlite3.Database;
+export class Database {
+  private db: sqlite3.Database;
 
-export async function open_db(filename: string): Promise<Database> {
-  return new Promise((resolve, reject) => {
-    const db = new Database(filename, (error) => {
-      if (error) {
-        reject(error);
-      } else {
-        resolve(db);
-      }
-    });
-  });
-}
+  private constructor(db: sqlite3.Database) {
+    this.db = db;
+  }
 
-export async function close_db(db: Database) {
-  return new Promise<void>((resolve, reject) => {
-    db.close((error) => {
-      if (error) {
-        reject(error);
-      } else {
-        resolve();
-      }
+  public async close(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      this.db.close((error) => {
+        if (error) {
+          reject(error);
+        } else {
+          resolve();
+        }
+      });
     });
-  });
+  }
+
+  public static async open(filename: string): Promise<Database> {
+    return new Promise((resolve, reject) => {
+      const db = new sqlite3.Database(filename, (error) => {
+        if (error) {
+          reject(error);
+        } else {
+          resolve(new Database(db));
+        }
+      });
+    });
+  }
 }
