@@ -1,4 +1,4 @@
-import sqlite3 from "sqlite3";
+import sqlite3, { type RunResult } from "sqlite3";
 
 export class Database {
   private db: sqlite3.Database;
@@ -16,6 +16,32 @@ export class Database {
           resolve();
         }
       });
+    });
+  }
+
+  public async run(sql: string, params: any[]): Promise<RunResult> {
+    return new Promise((resolve, reject) => {
+      function callback(this: RunResult, error: Error | null) {
+        if (error) {
+          reject(error);
+        } else {
+          resolve(this);
+        }
+      }
+      this.db.run(sql, params, callback);
+    });
+  }
+
+  public async all<T>(sql: string, params: any[]): Promise<T[]> {
+    return new Promise((resolve, reject) => {
+      function callback(error: Error | null, rows: any) {
+        if (error) {
+          reject(error);
+        } else {
+          resolve(rows);
+        }
+      }
+      this.db.all(sql, params, callback);
     });
   }
 

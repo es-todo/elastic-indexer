@@ -40,6 +40,13 @@ async function start() {
     },
   });
   console.log("🎉 Elasticsearch is ready!");
+  await db.run("drop table if exists tmp", []);
+  await db.run("create table if not exists tmp(id any)", []);
+  await db.run("delete from tmp", []);
+  await db.run("insert into tmp (id) values ($1)", [Math.random()]);
+  await db.run("insert into tmp (id) values ($1)", ["myself"]);
+  const rows = await db.all<{ id: number }>("select * from tmp", []);
+  console.log(rows);
 
   await db.close();
   await client.close();
