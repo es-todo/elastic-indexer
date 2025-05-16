@@ -30,11 +30,11 @@
 #
 # Path to directory where to store the data (separate multiple locations by comma):
 #
-path.data: /var/lib/elasticsearch
+path.data: /mnt/elasticsearch/data
 #
 # Path to log files:
 #
-path.logs: /var/log/elasticsearch
+path.logs: /mnt/elasticsearch/log
 #
 # ----------------------------------- Memory -----------------------------------
 #
@@ -120,5 +120,7 @@ cluster.name: elastic-indexer
 node.name: elastic-indexer-node
 network.host: 0.0.0.0
 discovery.type: single-node
+cluster.routing.allocation.disk.threshold_enabled: false
+
 
 
