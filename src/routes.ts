@@ -30,9 +30,11 @@ export const routes: route[] = [
         return {
           docs: [
             {
+              index: "doc",
               permission: { type: "role", role: "account-manager" },
               title: user.email,
               body: "",
+              tags: [],
             },
           ],
           links: ll.next ? [`/user/${ll.next}`] : [],

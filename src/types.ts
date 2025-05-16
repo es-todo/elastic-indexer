@@ -6,9 +6,11 @@ export type url_outcome = {
 };
 
 export type doc = {
+  index: "doc";
   permission: permission;
   title: string;
   body: string;
+  tags: string[];
 };
 
 export type permission =
