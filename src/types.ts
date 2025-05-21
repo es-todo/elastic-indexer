@@ -6,7 +6,7 @@ export type url_outcome = {
 };
 
 export type doc = {
-  index: "doc";
+  index: "docs";
   permission: permission;
   title: string;
   body: string;

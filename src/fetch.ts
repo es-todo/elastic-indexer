@@ -8,4 +8,4 @@ export type fetch = <DB extends keyof OBJS, T extends OBJS[DB]["type"]>(
   db: DB,
   type: T,
   id: string
-) => (OBJS[DB] & { type: T })["data"];
+) => (OBJS[DB] & { type: T })["data"] | null | undefined;

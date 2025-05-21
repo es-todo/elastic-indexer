@@ -1,13 +1,8 @@
 import { Client } from "@elastic/elasticsearch";
-import UrlPattern from "url-pattern";
-import { routes } from "./routes.ts";
 import { es_green, create_index } from "./es-helpers.ts";
 import { Database } from "./sqlite.ts";
-
-const all_routes = routes.map((x) => ({
-  ...x,
-  pattern: new UrlPattern(x.pattern),
-}));
+import { start_invalidator } from "./invalidator.ts";
+import { start_indexer } from "./indexer.ts";
 
 async function start() {
   const client = new Client({ node: "http://127.0.0.1:9200" });
@@ -40,13 +35,59 @@ async function start() {
     },
   });
   console.log("🎉 Elasticsearch is ready!");
-  await db.run("drop table if exists tmp", []);
-  await db.run("create table if not exists tmp(id any)", []);
-  await db.run("delete from tmp", []);
-  await db.run("insert into tmp (id) values ($1)", [Math.random()]);
-  await db.run("insert into tmp (id) values ($1)", ["myself"]);
-  const rows = await db.all<{ id: number }>("select * from tmp", []);
-  console.log(rows);
+  await db.run(
+    `create table if not exists meta (
+       key text not null primary key,
+       value text not null)`,
+    []
+  );
+  await db.run(
+    `create table if not exists url (url_id text not null primary key)`,
+    []
+  );
+  await db.run(
+    `create table if not exists doc (
+       url_id text not null,
+       perm text not null,
+       primary key (url_id, perm),
+       foreign key (url_id) references url (url_id)
+     )`,
+    []
+  );
+  await db.run(
+    `create table if not exists dep (
+       url_id text not null,
+       dep text not null,
+       primary key (url_id, dep),
+       foreign key (url_id) references url (url_id)
+     )`,
+    []
+  );
+  await db.run(`create index if not exists dep_idx on dep (dep)`, []);
+  await db.run(
+    `create table if not exists queue (
+       url_id text not null,
+       primary key (url_id),
+       foreign key (url_id) references url (url_id)
+     )`,
+    []
+  );
+  await db.run(`delete from queue where url_id = $1`, ["/"]);
+  await db.run(`insert into queue (url_id) values ($1)`, ["/"]);
+  await db.run(`insert or ignore into url (url_id) values ($1)`, ["/"]);
+
+  const callback = start_indexer(client, db);
+  await start_invalidator(db, () => {
+    console.log("advanced");
+    callback();
+  });
+  //await db.run("drop table if exists tmp", []);
+  //await db.run("create table if not exists tmp(id any)", []);
+  //await db.run("delete from tmp", []);
+  //await db.run("insert into tmp (id) values ($1)", [Math.random()]);
+  //await db.run("insert into tmp (id) values ($1)", ["myself"]);
+  //const rows = await db.all<{ id: number }>("select * from tmp", []);
+  //console.log(rows);
 
   await db.close();
   await client.close();

@@ -1,7 +1,9 @@
 import sqlite3, { type RunResult } from "sqlite3";
+import { Mutex } from "async-mutex";
 
 export class Database {
   private db: sqlite3.Database;
+  private mutex = new Mutex();
 
   private constructor(db: sqlite3.Database) {
     this.db = db;
@@ -43,6 +45,21 @@ export class Database {
       }
       this.db.all(sql, params, callback);
     });
+  }
+
+  public async in_transaction<T>(f: () => Promise<T>): Promise<T> {
+    await this.mutex.acquire();
+    try {
+      await this.run("begin transaction", []);
+      const res = await f();
+      await this.run("commit", []);
+      return res;
+    } catch (err) {
+      await this.run("rollback", []);
+      throw err;
+    } finally {
+      this.mutex.release();
+    }
   }
 
   public static async open(filename: string): Promise<Database> {
