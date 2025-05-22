@@ -118,8 +118,8 @@ async function index_url(es: ES, db: Database, url: string) {
     ({ type, id }) => `${encodeURIComponent(type)}:${encodeURIComponent(id)}`
   );
   const to_remove_perms = difference(existing_perms, new_perms);
-  const to_add_or_update_perms = difference(new_perms, to_remove_perms);
-  console.log({ to_remove_perms, to_add_or_update_perms });
+  const to_add_perms = difference(new_perms, existing_perms);
+  console.log({ to_remove_perms, to_add_perms });
   for (const doc of docs) {
     console.log(doc);
     const perm = encode_permission(doc.permission);
@@ -141,8 +141,8 @@ async function index_url(es: ES, db: Database, url: string) {
     throw new Error("TODO remove doc from elastic");
   }
   await db.in_transaction(async () => {
-    for (const perm of to_add_or_update_perms) {
-      console.log(perm);
+    for (const perm of to_add_perms) {
+      console.log(`adding ${url} ${perm}`);
       await db.run(`insert into doc (url_id, perm) values ($1, $2)`, [
         url,
         perm,
