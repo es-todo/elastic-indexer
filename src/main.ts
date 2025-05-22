@@ -76,11 +76,8 @@ async function start() {
   await db.run(`insert into queue (url_id) values ($1)`, ["/"]);
   await db.run(`insert or ignore into url (url_id) values ($1)`, ["/"]);
 
-  const callback = start_indexer(client, db);
-  await start_invalidator(db, () => {
-    console.log("advanced");
-    callback();
-  });
+  const resume = start_indexer(client, db);
+  await start_invalidator(db, resume);
   //await db.run("drop table if exists tmp", []);
   //await db.run("create table if not exists tmp(id any)", []);
   //await db.run("delete from tmp", []);

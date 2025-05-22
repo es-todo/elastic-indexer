@@ -186,9 +186,26 @@ async function index_once(es: ES, db: Database) {
   }
 }
 
+async function index_many(es: ES, db: Database) {
+  while (true) {
+    if ((await index_once(es, db)) === false) {
+      return;
+    }
+  }
+}
+
 export function start_indexer(es: ES, db: Database): () => void {
-  index_once(es, db);
-  return () => {
-    console.log("HERE");
-  };
+  let scheduled = false;
+  let promise = index_many(es, db);
+  function halted() {
+    if (!scheduled) return;
+    scheduled = false;
+    promise = index_many(es, db);
+  }
+  function resume() {
+    if (scheduled) return;
+    scheduled = true;
+    promise.then(halted);
+  }
+  return resume;
 }
