@@ -34,7 +34,7 @@ export const routes: route[] = [
               index: "docs",
               permission: { type: "role", role: "account-manager" },
               title: user?.email ?? "",
-              body: "",
+              body: user?.name ?? "",
               tags: [],
             },
           ],
