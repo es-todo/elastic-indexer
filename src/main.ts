@@ -3,6 +3,63 @@ import { es_green, create_index } from "./es-helpers.ts";
 import { Database } from "./sqlite.ts";
 import { start_invalidator } from "./invalidator.ts";
 import { start_indexer } from "./indexer.ts";
+import express from "express";
+
+const port = 3001;
+
+function start_express(client: Client) {
+  const app = express();
+  app.get("/search-apis/search", (req, res) => {
+    const q = req.query.q;
+    console.log({ q });
+    if (typeof q !== "string") {
+      res.status(401).send(`invalid query`);
+      return;
+    }
+    client
+      .search({
+        index: "docs",
+        explain: false,
+        query: {
+          bool: {
+            should: [
+              {
+                match: {
+                  "body.substr": {
+                    query: q,
+                    boost: 1.0,
+                    operator: "and",
+                  },
+                },
+              },
+              {
+                match: {
+                  body: {
+                    query: q,
+                    boost: 2.0,
+                    operator: "and",
+                  },
+                },
+              },
+            ],
+            minimum_should_match: 1,
+          },
+        },
+        collapse: {
+          field: "url",
+        },
+      })
+      .then((result) => {
+        res.status(200).json(result);
+      })
+      .catch((error) => {
+        res.status(500).json(error);
+      });
+  });
+  app.listen(port, () => {
+    console.log(`elastic server listening on port ${port}`);
+  });
+}
 
 async function start() {
   const client = new Client({ node: "http://127.0.0.1:9200" });
@@ -13,8 +70,24 @@ async function start() {
     settings: {
       number_of_shards: 1,
       number_of_replicas: 0,
+      index: {
+        max_ngram_diff: 8,
+      },
       analysis: {
+        tokenizer: {
+          ngram_tokenizer: {
+            type: "ngram",
+            min_gram: 2,
+            max_gram: 10,
+            token_chars: ["letter", "digit"],
+          },
+        },
         analyzer: {
+          ngram_analyzer: {
+            type: "custom",
+            tokenizer: "ngram_tokenizer",
+            filter: ["lowercase"],
+          },
           universal: {
             type: "custom",
             tokenizer: "icu_tokenizer",
@@ -28,9 +101,30 @@ async function start() {
       properties: {
         permission: { type: "keyword" },
         url: { type: "keyword" },
-        title: { type: "text", analyzer: "universal" },
-        body: { type: "text", analyzer: "universal" },
+        title: {
+          type: "text",
+          analyzer: "universal",
+          fields: {
+            substr: {
+              type: "text",
+              analyzer: "ngram_analyzer",
+              search_analyzer: "standard",
+            },
+          },
+        },
+        body: {
+          type: "text",
+          analyzer: "universal",
+          fields: {
+            substr: {
+              type: "text",
+              analyzer: "ngram_analyzer",
+              search_analyzer: "standard",
+            },
+          },
+        },
         tag: { type: "keyword" },
+        path: { type: "keyword" },
       },
     },
   });
@@ -75,6 +169,7 @@ async function start() {
   await db.run(`delete from queue where url_id = $1`, ["/"]);
   await db.run(`insert into queue (url_id) values ($1)`, ["/"]);
   await db.run(`insert or ignore into url (url_id) values ($1)`, ["/"]);
+  start_express(client);
 
   const resume = start_indexer(client, db);
   await start_invalidator(db, resume);

@@ -12,6 +12,7 @@ import { type Client as ES } from "@elastic/elasticsearch";
 
 const routes = orig_routes.map((x) => ({
   ...x,
+  route_string: x.pattern,
   pattern: new UrlPattern(x.pattern, {
     segmentNameCharset: "a-zA-Z0-9_-",
   }),
@@ -45,6 +46,7 @@ type url_data = {
   dependencies: { type: string; id: string }[];
   docs: doc[];
   links: string[];
+  path: string;
 };
 
 async function render_url_data(url: string): Promise<url_data> {
@@ -91,7 +93,7 @@ async function render_url_data(url: string): Promise<url_data> {
   while (true) {
     const outcome = body_function(fetch);
     if (promises.length === 0) {
-      return { ...outcome, dependencies };
+      return { ...outcome, dependencies, path: route.route_string };
     } else {
       await Promise.all(promises);
       promises.splice(0, promises.length);
@@ -101,7 +103,7 @@ async function render_url_data(url: string): Promise<url_data> {
 
 async function index_url(es: ES, db: Database, url: string) {
   console.log(`indexing "${url}" ...`);
-  const { dependencies, docs, links } = await render_url_data(url);
+  const { dependencies, docs, path, links } = await render_url_data(url);
   console.log({ url, dependencies, docs, links });
   const existing_perms = (
     await db.all<{ perm: string }>(`select perm from doc where url_id = $1`, [
@@ -132,6 +134,7 @@ async function index_url(es: ES, db: Database, url: string) {
         title: doc.title,
         body: doc.body,
         tag: doc.tags,
+        path: path,
       },
     });
     console.log(res);
@@ -153,7 +156,10 @@ async function index_url(es: ES, db: Database, url: string) {
       throw new Error("TODO remove doc from sqlite");
     }
     for (const dep of difference(existing_deps, new_deps)) {
-      throw new Error(`TODO remove dep ${dep}`);
+      await db.run(`delete from dep where url_id = $1 and dep = $2`, [
+        url,
+        dep,
+      ]);
     }
     for (const dep of difference(new_deps, existing_deps)) {
       await db.run(`insert into dep (url_id, dep) values ($1, $2)`, [url, dep]);
